@@ -96,12 +96,12 @@ int main()
     for (int i = 0; i < row2; i++)
     {
         Ln2m[i] = new float[maxweight1];
+        Ln2mbuff[i] = new float[maxweight1];
     }
     for (int i = 0; i < row1; i++)
     {
         Lm2n[i] = new float[maxweight2];
     }
-
     return 0;
 }
 
