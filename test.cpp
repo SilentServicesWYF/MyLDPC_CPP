@@ -58,13 +58,9 @@ int main()
         fin >> constell[i];
     }
     cout<<"constell.txt"<<"矩阵导入完成"<<endl;
-    // for (int i = 0; i < row2; i++)
+    // for (int i = 0; i < 372*2; i++)
     // {
-    //     cout<<"输出H的第"<<i+1<<"行数据"<<endl;
-    //     for (int j = 0; j < maxweight1; j++)
-    //     {
-    //         cout<<n2m[i][j]<<endl;
-    //     }
+    //     cout<<constell[i]<<endl;
     // }
     //验证一下H*c是不是得0
     flag = gfmatrixmul(H,c,186,372);
@@ -83,12 +79,24 @@ int main()
     for (int n = 0; n < col1; n++)
     {
         subconstell = floatslice(constell,n*2,n*2+1);
+        // for (int k = 0;  k < 2; k++)
+        // {
+        //     cout<<subconstell[k]<<endl;
+        // }
         for (int i = 0; i<4; i++)
         {
             Lch[n][i] = LLRV(subconstell,pskdict,i);
         }
         delete []subconstell; //一定要释放new出来的内存!!!
     }
+    // for (int i = 0; i < col1; i++)
+    // {
+    //     cout<<"输出Lch的第"<<i+1<<"行数据"<<endl;
+    //     for (int j = 0; j < 4; j++)
+    //     {
+    //         cout<<Lch[i][j]<<endl;
+    //     }
+    // }
     /*初始化Ln2m,Lm2n,Ln2mbuff*/
     float ** Ln2m = new float *[row2];
     float ** Lm2n = new float *[row1];
@@ -96,11 +104,33 @@ int main()
     for (int i = 0; i < row2; i++)
     {
         Ln2m[i] = new float[maxweight1];
-        Ln2mbuff[i] = new float[maxweight1];
+        Ln2mbuff[i] = new float[maxweight1*4];
     }
     for (int i = 0; i < row1; i++)
     {
         Lm2n[i] = new float[maxweight2];
+    }
+    for (int k = 0; k < col1; k++)
+    {
+        int avm_index = 0;
+        while ((n2m[k][avm_index] != 0) && (avm_index < maxweight1))
+        {
+            int Lch_index = 0;
+            for (int buff_index = avm_index*4; buff_index < (avm_index + 1)*4; buff_index++)
+            {
+                Ln2mbuff[k][buff_index] = Lch[k][Lch_index];
+                Lch_index = Lch_index + 1;
+            }
+            avm_index = avm_index + 1;
+        }
+    }
+    for (int i = 0; i < row2; i++)
+    {
+        cout<<"输出Ln2mbuff的第"<<i+1<<"行数据"<<endl;
+        for (int j = 0; j < maxweight1*4; j++)
+        {
+            cout<<Ln2mbuff[i][j]<<endl;
+        }
     }
     return 0;
 }
@@ -152,7 +182,7 @@ void readdata(int row,int col, int **matrix, char *filename)
 float LLRV(float *subconstell, int *pskdict, int gf)
 /*对输入的星座点计算对应的gf元素的对数似然比函数*/
 {
-    int llrv = 0;
+    float llrv = 0;
     int index_start = gf*2;
     int index_end = gf*2+1;
     int x_index = 0;
