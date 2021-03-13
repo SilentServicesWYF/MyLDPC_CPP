@@ -20,7 +20,9 @@ float *floatslice(float *arry, int start_index, int end_index);
 int *intslice(int *arry, int start_index, int end_index);
 int findnode(int **arry, int node1, int node2,int len);
 void readvector(int row, int *vector, char const *filename);
-void *Lpostupdate(float *Lpostv, float *Lm2nv, int target);
+void Lpostupdate(float *Lpostv, float *Lm2nv, int target);
+int *nodediff(int *mset, int m, int n2m_num);
+void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target);
 
 int main()
 {
@@ -149,9 +151,12 @@ int main()
         est_c[k] = new int[1];
     }
     /* 迭代开始 */
+    int iterflag = 1;
+    int iter_num = 0;
     int maxiter = 5000;
-    for (int iter = 0; iter < 1; iter ++)
+    while(iterflag == 1 && iter_num < maxiter)
     {
+        iter_num = iter_num + 1;
         /*尝试性解码*/
         //为Lpost赋值
         for (int k = 0; k < col1; k ++)
@@ -162,7 +167,7 @@ int main()
                 // cout<<Lpost[k][j]<<endl;
             }
         }
-    //更新Lpost的值
+        //更新Lpost的值
         for (int n = 0; n < 372; n ++)
         {
             //搜寻所有与当前n连接的节点的m节点
@@ -205,6 +210,49 @@ int main()
             }
         }
         cout<<"错误码元数："<<errorcount<<endl;
+        //判断是否解码成功条件
+        flag = gfmatrixmul(H,est_c,186,372);
+        for (int k = 0; k < 186; k ++)
+        {
+            if (flag[k] != 0)
+            {
+                iterflag = 1;
+                break;
+            }
+            iterflag = 0;
+        }
+        delete []flag;
+        //水平信息传递
+        //初始化Ln2m
+        for (int n = 0; n < col1; n ++)
+        {
+            for (int k = 0; k < maxweight1*4; k ++)
+            {
+                Ln2m[n][k] = Ln2mbuff[n][k];
+            }
+        }
+        for (int n = 0; n < col1; n ++)
+        {
+            //搜寻所有与当前n连接的节点的m节点
+            int mset[n2m_num[n]] = {0};
+            for (int k = 0; k < n2m_num[n]; k ++)
+            {
+                mset[k] = n2m[n][k];
+            }
+            //对每个n连接的m节点计算除了本m以外连接到n的m节点进行LLRV更新
+            for (int k = 0; k < n2m_num[n]; k ++)
+            {
+                int *msubset;
+                msubset = nodediff(mset, mset[k], n2m_num[n]);
+                for (int mm = 0; mm < n2m_num[n] - 1; mm ++)
+                {
+                    int targetm2n = findnode(m2n,msubset[mm]-1,(n+1),5);
+                    LLRVupdate(Ln2m[n], Lm2n[n], k, targetm2n);
+                }
+            }  
+        }
+        // 垂直信息传递
+        
     }
     return 0;
 }
@@ -317,11 +365,31 @@ int findnode(int **arry, int node1, int node2,int len)
         }
     }
 }
-void *Lpostupdate(float *Lpostv, float *Lm2nv, int target)
-/*更新Lpost*/
+void Lpostupdate(float *Lpostv, float *Lm2nv, int target)
 {
     for (int k = 0; k < 4; k++)
     {
-        Lpostv[k] = Lpostv[k] + Lm2nv[target*4+k];
+        Lpostv[k] = Lpostv[k] + Lm2nv[target*4 + k];
+    }
+}
+int *nodediff(int *mset, int m, int n2m_num)
+{
+    int *msubset = new int[n2m_num-1];
+    int msubset_index = 0;
+    for (int k = 0; k < n2m_num; k ++)
+    {
+        if (mset[k] != m)
+        {
+            msubset[msubset_index] = mset[k];
+            msubset_index = msubset_index + 1;
+        }
+    }
+    return msubset;
+}
+void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target)
+{
+    for (int k = 0; k < 4; k ++)
+    {
+        LLRV1[index*4 + k] = LLRV1[index*4 + k] + LLRV2[target*4 + k];
     }
 }
