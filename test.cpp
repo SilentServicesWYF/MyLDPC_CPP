@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <algorithm>
 
 using namespace std;
 int gfaddtable[4][4] = {{0,1,2,3},{1,0,3,2},{2,3,0,1},{3,2,1,0}};
@@ -17,8 +18,9 @@ void readdata(int row,int col, int **matrix, char const *filename);
 float LLRV(float *subconstell, int *pskdict, int gf);
 float *floatslice(float *arry, int start_index, int end_index);
 int *intslice(int *arry, int start_index, int end_index);
-int *findnode(int *arry, int node);
+int findnode(int **arry, int node1, int node2,int len);
 void readvector(int row, int *vector, char const *filename);
+void *Lpostupdate(float *Lpostv, float *Lm2nv, int target);
 
 int main()
 {
@@ -70,6 +72,7 @@ int main()
     // }
     //验证一下H*c是不是得0
     flag = gfmatrixmul(H,c,186,372);
+    delete []flag;
     // for (int i = 0; i < row1; i++)
     // {
     //     cout<<flag[i][0]<<endl;
@@ -147,22 +150,61 @@ int main()
     }
     /* 迭代开始 */
     int maxiter = 5000;
-    for (int iter = 0; iter < maxiter; iter ++)
+    for (int iter = 0; iter < 1; iter ++)
     {
-        // 尝试性解码
+        /*尝试性解码*/
         //为Lpost赋值
         for (int k = 0; k < col1; k ++)
         {
             for (int j = 0; j < 4; j ++)
             {
                 Lpost[k][j] = Lch[k][j];
+                // cout<<Lpost[k][j]<<endl;
             }
         }
     //更新Lpost的值
         for (int n = 0; n < 372; n ++)
         {
-            
+            //搜寻所有与当前n连接的节点的m节点
+            int mset[n2m_num[n]] = {0};
+            for (int k = 0; k < n2m_num[n]; k ++)
+            {
+                mset[k] = n2m[n][k];
+            }
+            //搜索到所有与n连接的m节点之后对每一个被连接的m节点搜索其连接的n节点在Lm2n中的位置然后更新Lpost
+            for (int k = 0; k < n2m_num[n]; k ++) //n2m_num[n]就是当前被连接的m节点的数量
+            {
+                //搜寻被当前m节点连接的n在Lm2n中的位置
+                int targetm2n = findnode(m2n,mset[k]-1,(n+1),5); //第三个参数要+1是因为此参数是被搜寻的n而不是角标了
+                //而第二个参数则是以角标形式出现的
+                Lpostupdate(Lpost[n],Lm2n[mset[k]-1],targetm2n);
+                // for (int j = 0;j < 4;j ++)
+                // {
+                //     cout<<Lpost[n][j]<<endl;
+                // }
+            }
+            est_c[n][0] = max_element(Lpost[n],Lpost[n]+4) - Lpost[n];  //根据最大后验估计技术est_c
+
         }
+        // for (int i = 0; i < col1; i++)
+        // {
+        //     cout<<"输出Lpost的第"<<i+1<<"行数据"<<endl;
+        //     for (int j = 0; j < 4; j++)
+        //     {
+        //         cout<<Lpost[i][j]<<endl;
+        //     }
+        // }
+        //统计错误码元数
+        int errorcount = 0;
+        for (int k = 0; k < col1; k ++)
+        {
+            // cout<<(est_c[k][0]-c[k][1])<<endl;
+            if ((est_c[k][0]-c[k][0]) != 0)
+            {
+                errorcount = errorcount + 1;
+            }
+        }
+        cout<<"错误码元数："<<errorcount<<endl;
     }
     return 0;
 }
@@ -262,23 +304,24 @@ int *intslice(int *arry, int start_index, int end_index)
     }
     return a;
 }
-int *findnode(int **arry, int node)
+int findnode(int **arry, int node1, int node2,int len)
 {
     int *temp;
-    temp = arry[node];
-    int len = sizeof(temp)/sizeof(temp[0]);
-    int count = 0;
+    temp = arry[node1];
     for (int k = 0; k < len; k++)
     {
-        if (temp[k] != 0)
+        if (temp[k] == node2)
         {
-            count = count + 1;
+            return k;
+            break;
         }
     }
-    int *targetnode = new int[count];
-    for (int k = 0; k < count; k ++)
+}
+void *Lpostupdate(float *Lpostv, float *Lm2nv, int target)
+/*更新Lpost*/
+{
+    for (int k = 0; k < 4; k++)
     {
-        targetnode[k] = temp[k];
+        Lpostv[k] = Lpostv[k] + Lm2nv[target*4+k];
     }
-    return targetnode;
 }
