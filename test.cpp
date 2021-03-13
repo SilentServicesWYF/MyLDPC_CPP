@@ -13,10 +13,12 @@ int gfsub(int a, int b);
 int gfmul(int a, int b);
 int gfdiv(int a, int b);
 int **gfmatrixmul(int **mat1, int **mat2, int row1, int col1);
-void readdata(int row,int col, int **matrix, char *filename);
+void readdata(int row,int col, int **matrix, char const *filename);
 float LLRV(float *subconstell, int *pskdict, int gf);
 float *floatslice(float *arry, int start_index, int end_index);
 int *intslice(int *arry, int start_index, int end_index);
+int *findnode(int *arry, int node);
+void readvector(int row, int *vector, char const *filename);
 
 int main()
 {
@@ -35,6 +37,8 @@ int main()
     int ** n2m = new int *[row2]; //与n连接的m的连接表
     float constell[2*row2] = {0};
     float *subconstell;
+    int n2m_num[col1] = {0};
+    int m2n_num[row1] = {0};
     for (int i = 0; i<row1; i++)
     {        
         flag[i] = new int[1];
@@ -51,6 +55,8 @@ int main()
     readdata(row2,col2,c,"c.txt");
     readdata(row1,maxweight2,m2n,"m2n.txt");
     readdata(row2,maxweight1,n2m,"n2m.txt");
+    readvector(col1,n2m_num,"n2m_num.txt");
+    readvector(row1,m2n_num,"m2n_num.txt");
     ifstream fin;
     fin.open("constell.txt");
     for (int i = 0; i < 2*row2; i++)
@@ -124,12 +130,38 @@ int main()
             avm_index = avm_index + 1;
         }
     }
-    for (int i = 0; i < row2; i++)
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     cout<<"输出Ln2mbuff的第"<<i+1<<"行数据"<<endl;
+    //     for (int j = 0; j < maxweight1*4; j++)
+    //     {
+    //         cout<<Ln2mbuff[i][j]<<endl;
+    //     }
+    // }
+    float ** Lpost = new float *[col1]; //为Lpost申请内存
+    int ** est_c = new int *[col1]; //为最大似然估计估计出来的码元申请内存
+    for (int k = 0; k < col1; k ++)
     {
-        cout<<"输出Ln2mbuff的第"<<i+1<<"行数据"<<endl;
-        for (int j = 0; j < maxweight1*4; j++)
+        Lpost[k] = new float[4];
+        est_c[k] = new int[1];
+    }
+    /* 迭代开始 */
+    int maxiter = 5000;
+    for (int iter = 0; iter < maxiter; iter ++)
+    {
+        // 尝试性解码
+        //为Lpost赋值
+        for (int k = 0; k < col1; k ++)
         {
-            cout<<Ln2mbuff[i][j]<<endl;
+            for (int j = 0; j < 4; j ++)
+            {
+                Lpost[k][j] = Lch[k][j];
+            }
+        }
+    //更新Lpost的值
+        for (int n = 0; n < 372; n ++)
+        {
+            
         }
     }
     return 0;
@@ -166,7 +198,7 @@ int **gfmatrixmul(int **mat1, int **mat2, int row1, int col1)
     }
     return mat;
 }
-void readdata(int row,int col, int **matrix, char *filename)
+void readdata(int row,int col, int **matrix, char const *filename)
 {
     ifstream fin;
     fin.open(filename);
@@ -178,6 +210,16 @@ void readdata(int row,int col, int **matrix, char *filename)
         }
     }
     cout<<filename<<"矩阵导入完成"<<endl;
+}
+void readvector(int row, int *vector, char const *filename)
+{
+    ifstream fin;
+    fin.open(filename);
+    for (int i = 0; i < row; i++)
+    {
+        fin >> vector[i];
+    }
+    cout<<filename<<"向量导入完成"<<endl;
 }
 float LLRV(float *subconstell, int *pskdict, int gf)
 /*对输入的星座点计算对应的gf元素的对数似然比函数*/
@@ -219,4 +261,24 @@ int *intslice(int *arry, int start_index, int end_index)
         count = count + 1;
     }
     return a;
+}
+int *findnode(int **arry, int node)
+{
+    int *temp;
+    temp = arry[node];
+    int len = sizeof(temp)/sizeof(temp[0]);
+    int count = 0;
+    for (int k = 0; k < len; k++)
+    {
+        if (temp[k] != 0)
+        {
+            count = count + 1;
+        }
+    }
+    int *targetnode = new int[count];
+    for (int k = 0; k < count; k ++)
+    {
+        targetnode[k] = temp[k];
+    }
+    return targetnode;
 }
