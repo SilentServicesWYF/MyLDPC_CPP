@@ -261,17 +261,25 @@ int main()
                 nset[k] = m2n[m][k];
             }
             // 初始化Ltheta Lro 后面别忘删
-            float ** Ltheta = new float *[m2n_num[m]];
+            float ** Ltheta = new float *[m2n_num[m]]; //Ltheta最后一列无意义
             float ** Lro = new float *[m2n_num[m]];
-            for (int k = 0; k < m2n_num[m]; k ++)
-            {
-                Ltheta[k] = new float[4];
-                Lro[k] = new float[4];
-            }
             // 初始化Ltheta[0]
-            int targetn2m = findnode(n2m,nset[0], (m + 1), 3);
-            float *Lcnm1 = floatslice(Ln2m[nset[0]], targetn2m*4, (targetn2m + 1)*4);
-            
+            int targetn2m = findnode(n2m, nset[0], (m + 1), 3); //寻找当前m在Ln2m第n行中的角标
+            float *Lcnm1 = floatslice(Ln2m[nset[0] - 1], targetn2m*4, (targetn2m + 1)*4);
+            Ltheta[0] = LLRVresort(Lcnm1, H[m][nset[0] - 1], 4); // 节点转角标-1,内存在Ltheta结束后释放
+            delete []Lcnm1; //Lcnm1在LLRVresort就可以释放了
+            // 初始化Lro[0]
+            targetn2m = findnode(n2m, nset[m2n_num[m]], (m + 1), 3);
+            float *Lcnmend = floatslice(Ln2m[nset[m2n_num[m] - 1]], targetn2m*4, (targetn2m + 1)*4);
+            Lro[m2n_num[m] - 1] = LLRVresort(Lcnmend, H[m][nset[m2n_num[m] - 1] - 1], 4);
+            delete []Lcnmend;
+            // 为Ltheta Lro循环赋值
+            for (int k = 1; k < m2n_num[m]; k ++)
+            {
+                int target1 = 0;
+                int target2 = 0;
+
+            }
 
         }
     }
@@ -418,10 +426,41 @@ void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target)
 float *LLRVresort(float *LLRV, int H, int q)
 {
     float *templlrv = new float[q];
-    for (int k = 0; k < q; k ++)
+    templlrv[0] = LLRV[0]; //0除H永远得0
+    for (int k = 1; k < q; k ++)
     {
         int gf_index = gfdiv(k,H);
         templlrv[k] = LLRV[gf_index]; 
     }
     return templlrv;
+}
+void boxplusupdate(float *L, float *Lcmnk, int H, int q)
+/*用于更新Ltheta,Lro*/
+{
+    int gf0[q-1] = {0};
+    int set1_len;
+    for (int k = 0; k < q - 1; k++)
+    {
+        gf0[k] = k + 1;
+    }
+    for (int i = 0; i < q; i ++)
+    {
+        float L1 = L[i];
+        float L2 = Lcmnk[gfdiv(i,H)];
+        float Lpart1 = max(L1,L2);
+        if (i == 0)
+        {
+            int *set1 = gf0;
+            set1_len = q - 1;
+        }
+        else
+        {
+            int *set1 = nodediff(gf0, i, q-1); //set1用完删除
+            set1_len = q - 2;
+        }
+        for (int k = 0; k < set1_len; k ++)
+        {
+
+        }
+    }
 }
