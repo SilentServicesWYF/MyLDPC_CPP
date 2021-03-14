@@ -23,6 +23,7 @@ void readvector(int row, int *vector, char const *filename);
 void Lpostupdate(float *Lpostv, float *Lm2nv, int target);
 int *nodediff(int *mset, int m, int n2m_num);
 void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target);
+float *LLRVresort(float *LLRV, int H, int q);
 
 int main()
 {
@@ -189,7 +190,6 @@ int main()
                 // }
             }
             est_c[n][0] = max_element(Lpost[n],Lpost[n]+4) - Lpost[n];  //根据最大后验估计技术est_c
-
         }
         // for (int i = 0; i < col1; i++)
         // {
@@ -246,13 +246,34 @@ int main()
                 msubset = nodediff(mset, mset[k], n2m_num[n]);
                 for (int mm = 0; mm < n2m_num[n] - 1; mm ++)
                 {
-                    int targetm2n = findnode(m2n,msubset[mm]-1,(n+1),5);
+                    int targetm2n = findnode(m2n,msubset[mm]-1,(n + 1),5); //元素转角标必须-1，角标转元素必须+!
                     LLRVupdate(Ln2m[n], Lm2n[n], k, targetm2n);
                 }
             }  
         }
         // 垂直信息传递
-        
+        for (int m = 0; m < row1; m ++)
+        {
+            //找出与本n相连的m节点
+            int nset[m2n_num[m]];
+            for (int k = 0; k < m2n_num[m]; k ++)
+            {
+                nset[k] = m2n[m][k];
+            }
+            // 初始化Ltheta Lro 后面别忘删
+            float ** Ltheta = new float *[m2n_num[m]];
+            float ** Lro = new float *[m2n_num[m]];
+            for (int k = 0; k < m2n_num[m]; k ++)
+            {
+                Ltheta[k] = new float[4];
+                Lro[k] = new float[4];
+            }
+            // 初始化Ltheta[0]
+            int targetn2m = findnode(n2m,nset[0], (m + 1), 3);
+            float *Lcnm1 = floatslice(Ln2m[nset[0]], targetn2m*4, (targetn2m + 1)*4);
+            
+
+        }
     }
     return 0;
 }
@@ -388,8 +409,19 @@ int *nodediff(int *mset, int m, int n2m_num)
 }
 void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target)
 {
+/*用于更新Ln2m*/
     for (int k = 0; k < 4; k ++)
     {
         LLRV1[index*4 + k] = LLRV1[index*4 + k] + LLRV2[target*4 + k];
     }
+}
+float *LLRVresort(float *LLRV, int H, int q)
+{
+    float *templlrv = new float[q];
+    for (int k = 0; k < q; k ++)
+    {
+        int gf_index = gfdiv(k,H);
+        templlrv[k] = LLRV[gf_index]; 
+    }
+    return templlrv;
 }
