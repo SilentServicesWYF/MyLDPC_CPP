@@ -24,6 +24,8 @@ void Lpostupdate(float *Lpostv, float *Lm2nv, int target);
 int *nodediff(int *mset, int m, int n2m_num);
 void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target);
 float *LLRVresort(float *LLRV, int H, int q);
+void boxplusupdate(float *L, float *Lcmnk, int H, int q);
+float *iterboxplus(float *L, float *Lcmnk, int H, int q);
 
 int main()
 {
@@ -434,33 +436,44 @@ float *LLRVresort(float *LLRV, int H, int q)
     }
     return templlrv;
 }
-void boxplusupdate(float *L, float *Lcmnk, int H, int q)
-/*用于更新Ltheta,Lro*/
+float *iterboxplus(float *L, float *Lcmnk, int H, int q)
+/*迭代计算Ltheta,Lro*/
 {
     int gf0[q-1] = {0};
     int set1_len;
-    for (int k = 0; k < q - 1; k++)
+    int *set1;
+    float Lpart1 = 0.0;
+    float Lpart2 = 0.0;
+    float *LL = new float[q]; //新变量
+    for (int k = 0; k < q-1; k++)
     {
         gf0[k] = k + 1;
+        float L4 = L[k + 1] + Lcmnk[gfdiv(k + 1,H)];
+        Lpart2 = max(Lpart2,L4);
     }
     for (int i = 0; i < q; i ++)
     {
         float L1 = L[i];
         float L2 = Lcmnk[gfdiv(i,H)];
-        float Lpart1 = max(L1,L2);
+        Lpart1 = max(L1,L2);
         if (i == 0)
         {
-            int *set1 = gf0;
+            set1 = gf0;
             set1_len = q - 1;
         }
         else
         {
-            int *set1 = nodediff(gf0, i, q-1); //set1用完删除
+            set1 = nodediff(gf0, i, q-1); //set1用完删除
             set1_len = q - 2;
         }
         for (int k = 0; k < set1_len; k ++)
         {
-
+            int x = set1[k];
+            float L3 = L[x] + Lcmnk[gfdiv(gfadd(i,x),H)];
+            Lpart1 = max(Lpart1,L3);
         }
+        LL[i] = Lpart1 - Lpart2;
     }
+    delete []set1; //清除set1的内存
+    return LL;
 }
