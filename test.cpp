@@ -26,6 +26,7 @@ void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target);
 float *LLRVresort(float *LLRV, int H, int q);
 void boxplusupdate(float *L, float *Lcmnk, int H, int q);
 float *iterboxplus(float *L, float *Lcnmk, int H, int q);
+float *boxplus(float *Ltheta, float *Lro, int H, int q);
 
 int main()
 {
@@ -117,12 +118,12 @@ int main()
     float ** Ln2mbuff = new float *[row2];
     for (int i = 0; i < row2; i++)
     {
-        Ln2m[i] = new float[maxweight1];
+        Ln2m[i] = new float[maxweight1*4];
         Ln2mbuff[i] = new float[maxweight1*4];
     }
     for (int i = 0; i < row1; i++)
     {
-        Lm2n[i] = new float[maxweight2];
+        Lm2n[i] = new float[maxweight2*4];
     }
     for (int k = 0; k < col1; k++)
     {
@@ -156,7 +157,7 @@ int main()
     /* 迭代开始 */
     int iterflag = 1;
     int iter_num = 0;
-    int maxiter = 5000;
+    int maxiter = 50;
     while(iterflag == 1 && iter_num < maxiter)
     {
         iter_num = iter_num + 1;
@@ -211,7 +212,7 @@ int main()
                 errorcount = errorcount + 1;
             }
         }
-        cout<<"错误码元数："<<errorcount<<endl;
+        cout<<"迭代第"<<iter_num<<"次"<<"错误码元数："<<errorcount<<endl;
         //判断是否解码成功条件
         flag = gfmatrixmul(H,est_c,186,372);
         for (int k = 0; k < 186; k ++)
@@ -222,6 +223,7 @@ int main()
                 break;
             }
             iterflag = 0;
+            cout<<"解码成功"<<endl;
         }
         delete []flag;
         //水平信息传递
@@ -233,6 +235,11 @@ int main()
                 Ln2m[n][k] = Ln2mbuff[n][k];
             }
         }
+        // for (int k = 0; k < maxweight1*4; k ++)
+        // {
+        //     cout<<Ln2m[371][k]<<endl;
+        // }
+
         for (int n = 0; n < col1; n ++)
         {
             //搜寻所有与当前n连接的节点的m节点
@@ -249,7 +256,7 @@ int main()
                 for (int mm = 0; mm < n2m_num[n] - 1; mm ++)
                 {
                     int targetm2n = findnode(m2n,msubset[mm]-1,(n + 1),5); //元素转角标必须-1，角标转元素必须+!
-                    LLRVupdate(Ln2m[n], Lm2n[n], k, targetm2n);
+                    LLRVupdate(Ln2m[n], Lm2n[msubset[mm] - 1], k, targetm2n);
                 }
             }  
         }
@@ -266,24 +273,31 @@ int main()
             float ** Ltheta = new float *[m2n_num[m]]; //Ltheta最后一行无意义
             float ** Lro = new float *[m2n_num[m]]; //Lro第一行无意义
             // 初始化Ltheta[0]
-            int targetn2m = findnode(n2m, nset[0], (m + 1), 3); //寻找当前m在Ln2m第n行中的角标
-            float *Lcnm1 = floatslice(Ln2m[nset[0] - 1], targetn2m*4, (targetn2m + 1)*4);
+            int targetn2m = findnode(n2m, nset[0] - 1, (m + 1), 3); //寻找当前m在Ln2m第n行中的角标
+            float *Lcnm1 = floatslice(Ln2m[nset[0] - 1], targetn2m*4, (targetn2m + 1)*4 - 1);
             Ltheta[0] = LLRVresort(Lcnm1, H[m][nset[0] - 1], 4); // 节点转角标-1,内存在Ltheta结束后释放
             delete []Lcnm1; //Lcnm1在LLRVresort就可以释放了
             // 初始化Lro[0]
-            targetn2m = findnode(n2m, nset[m2n_num[m]], (m + 1), 3);
-            float *Lcnmend = floatslice(Ln2m[nset[m2n_num[m] - 1]], targetn2m*4, (targetn2m + 1)*4);
+            targetn2m = findnode(n2m, nset[m2n_num[m] - 1] - 1, (m + 1), 3);
+            // if (m == 35)
+            // {
+            //     for (int k = 0; k < maxweight1*4; k ++)
+            //     {
+            //         cout<<Ln2m[371][k]<<endl;
+            //     }
+            // }
+            float *Lcnmend = floatslice(Ln2m[nset[m2n_num[m] - 1] - 1], targetn2m*4, (targetn2m + 1)*4 - 1);
             Lro[m2n_num[m] - 1] = LLRVresort(Lcnmend, H[m][nset[m2n_num[m] - 1] - 1], 4);
             delete []Lcnmend;
             // 为Ltheta Lro循环赋值
             for (int k = 1; k < m2n_num[m]; k ++)
             {
-                int target1 = findnode(n2m, nset[k], (m + 1), 3); //Ltheta的target
-                int target2 = findnode(n2m, nset[m2n_num[m] -1 - k] ,(m + 1), 3); //Lro的target
-                float *Lcnmk = floatslice(Ln2m[nset[k] - 1], target1*4, (target1 + 1)*4);
+                int target1 = findnode(n2m, nset[k] - 1, (m + 1), 3); //Ltheta的target
+                int target2 = findnode(n2m, nset[m2n_num[m] -1 - k] - 1 ,(m + 1), 3); //Lro的target
+                float *Lcnmk = floatslice(Ln2m[nset[k] - 1], target1*4, (target1 + 1)*4 - 1);
                 Ltheta[k] = iterboxplus(Ltheta[k-1], Lcnmk, H[m][nset[k]-1], 4);
-                Lcnmk = floatslice(Ln2m[nset[m2n_num[m] -1 - k] - 1], target2*4, (target2 + 1)*4);
-                Lro[m2n_num[m] - 1 - k] = iterboxplus(Lro[m2n_num[m] - k], Lcnmk, H[m][nset[m2n_num[m] -1 - k]-1], 4);
+                Lcnmk = floatslice(Ln2m[nset[m2n_num[m] -1 - k] - 1], target2*4, (target2 + 1)*4 - 1);
+                Lro[m2n_num[m] - 1 - k] = iterboxplus(Lro[m2n_num[m] - k], Lcnmk, H[m][nset[m2n_num[m] -1 - k] - 1], 4);
                 delete []Lcnmk;
             }
             for (int k = 0; k < m2n_num[m]; k ++)
@@ -295,14 +309,19 @@ int main()
                 }
                 else if (k == m2n_num[m] - 1)
                 {
-                    Lm2ntemp = LLRVresort(Ltheta[k - 1],gfdiv(1,H[m][nset[k] - 1]), 4);
+                    Lm2ntemp = LLRVresort(Ltheta[k - 1], gfdiv(1,H[m][nset[k] - 1]), 4);
                 }
                 else
                 {
-                    // Lm2ntemp = 
+                    Lm2ntemp = boxplus(Ltheta[k - 1], Lro[k + 1], H[m][nset[k] - 1], 4); 
+                }
+                for (int j = 0; j < 4; j ++)
+                {
+                    Lm2n[m][k*4 + j] = Lm2ntemp[j];
                 }
             }
-
+            delete []Ltheta;
+            delete []Lro;
         }
     }
     return 0;
@@ -382,7 +401,7 @@ float LLRV(float *subconstell, int *pskdict, int gf)
 float *floatslice(float *arry, int start_index, int end_index)
 /*用于float类型的切片*/
 {
-    float *a = new float[end_index-start_index];
+    float *a = new float[end_index-start_index + 1];
     int count = 0;
     for (int i = start_index; i <= end_index;i++)
     {
@@ -497,7 +516,43 @@ float *iterboxplus(float *L, float *Lcnmk, int H, int q)
     delete []set1; //清除set1的内存
     return LL;
 }
-float *boxplus(float *ltheta, float *Lro, float H, int q)
+float *boxplus(float *Ltheta, float *Lro, int H, int q)
 {
-    
+    int gf0[q-1] = {0};
+    int set1_len;
+    int *set1;
+    float Lpart1 = 0.0;
+    float Lpart2 = 0.0;
+    float *LL = new float[q];
+    for (int k = 0; k < q-1; k ++)
+    {
+        gf0[k] = k + 1;
+        float L4 = Ltheta[k + 1] + Lro[k + 1];
+        Lpart2 = max(Lpart2, L4);
+    }
+    for (int i = 0; i <  q; i ++)
+    {
+        float L1 = Ltheta[gfdiv(i,H)];
+        float L2 = Lro[gfdiv(i,H)];
+        Lpart1 = max(L1,L2);
+        if (i == 0)
+        {
+            set1 = gf0;
+            set1_len = q - 1;
+        }
+        else
+        {
+            set1 = nodediff(gf0, gfdiv(i,H), q-1);
+            set1_len = q - 2;
+        }
+        for (int k = 0; k < set1_len; k ++)
+        {
+            int x = set1[k];
+            float L3 = Ltheta[x] + Lro[gfadd(gfdiv(i,H),x)];
+            Lpart1 = max(Lpart1,L3);
+        }
+        LL[i] = Lpart1 - Lpart2;
+    }
+    delete []set1;
+    return LL;
 }
