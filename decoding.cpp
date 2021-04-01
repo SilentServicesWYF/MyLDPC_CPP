@@ -74,18 +74,15 @@ int main()
     {
         fin >> constell[i];
     }
-    cout<<"constell.txt"<<"矩阵导入完成"<<endl;
+    std::cout<<"constell.txt"<<"矩阵导入完成"<<endl;
     //验证一下H*c是不是得0
     flag = gfmatrixmul(H,c,186,372);
     delete []flag;
     float ** Lch = new float *[col1];
-    for (int i = 0; i < col1; i++)
-    {
-        Lch[i] = new float[4];
-    }
     int pskdict[8] = {-1,-1,-1,1,1,-1,1,1};
     for (int n = 0; n < col1; n++)
     {
+        Lch[n] = new float[4];
         subconstell = floatslice(constell,n*2,n*2+1);
         for (int i = 0; i<4; i++)
         {
@@ -93,6 +90,14 @@ int main()
         }
         delete []subconstell; //一定要释放new出来的内存!!!
     }
+    // for (int i = 0; i < col1; i ++)
+    // {
+    //     cout<<"d_Lch第"<<i+1<<"行数据"<<endl;
+    //     for (int j = 0; j < 4; j++)
+    //     {
+    //         cout<<Lch[i][j]<<endl;
+    //     }
+    // }
     /*初始化Ln2m,Lm2n,Ln2mbuff*/
     float ** Ln2m = new float *[row2];
     float ** Lm2n = new float *[row1];
@@ -131,12 +136,11 @@ int main()
     /* 迭代开始 */
     int iterflag = 1;
     int iter_num = 0;
-    int maxiter = 50;
-    struct timeval t1, t2;
-    double timeuse;
+    int maxiter = 50000;
+
+    clock_t decodebegin = clock();
     while(iterflag == 1 && iter_num < maxiter)
     {
-        gettimeofday(&t1,NULL);
         iter_num = iter_num + 1;
         /*尝试性解码*/
         //为Lpost赋值
@@ -166,7 +170,7 @@ int main()
             }
             est_c[n][0] = max_element(Lpost[n],Lpost[n]+4) - Lpost[n];  //根据最大后验估计技术est_c
         }
-        //统计错误码元数
+        // 统计错误码元数
         int errorcount = 0;
         for (int k = 0; k < col1; k ++)
         {
@@ -176,7 +180,7 @@ int main()
             }
         }
         cout<<"迭代第"<<iter_num<<"次"<<"错误码元数："<<errorcount<<endl;
-        //判断是否解码成功条件
+        // 判断是否解码成功条件
         flag = gfmatrixmul(H,est_c,186,372);
         iterflag = 0;
         for (int k = 0; k < 186; k ++)
@@ -277,17 +281,45 @@ int main()
                     Lm2n[m][k*4 + j] = Lm2ntemp[j];
                 }
             }
+            // // 监视Ltheta Lro
+            // if (iter_num == 1 && m == 71)
+            // {
+            //     for (int k = 0; k < 5; k ++)
+            //     {
+            //         cout<<"第"<<k+1<<"行";
+            //         for (int i = 0; i < 4; i++)
+            //         {
+            //             cout<<Lro[k][i]<<" ";
+            //         }
+            //         cout<<""<<endl;
+            //     }
+            // }
             delete []Ltheta;
             delete []Lro;
         }
-        gettimeofday(&t2,NULL);
-        timeuse = (t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1000.0;
-        cout<<"第"<<iter_num<<"解码耗时"<<timeuse<<"ms"<<endl;
+        // if (iter_num == 1)
+        // {
+        //     for (int k = 0; k < row1; k ++)
+        //     {
+        //         cout<<"第"<<k+1<<"行";
+        //         for (int i = 0; i < 20; i++)
+        //         {
+        //             cout<<Lm2n[k][i]<<" ";
+        //         }
+        //         cout<<""<<endl;
+        //     }
+        // }
+        // gettimeofday(&t2,NULL);
+        // timeuse = (t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1000.0;
+        // cout<<"第"<<iter_num<<"解码耗时"<<timeuse<<"ms"<<endl;
     }
     if (iter_num < maxiter)
     {
         cout<<"解码成功"<<endl;
     }
+    clock_t decodeend = clock();
+    double timeuse = ((double)(decodeend - decodebegin))/CLOCKS_PER_SEC;
+    std::cout<<iter_num<<"轮解码耗时"<<timeuse<<"s"<<endl;
     return 0;
 }
 
@@ -333,7 +365,7 @@ void readdata(int row,int col, int **matrix, char const *filename)
             fin >> matrix[i][j];
         }
     }
-    cout<<filename<<"矩阵导入完成"<<endl;
+    std::cout<<filename<<"矩阵导入完成"<<endl;
 }
 void readvector(int row, int *vector, char const *filename)
 {
@@ -343,7 +375,7 @@ void readvector(int row, int *vector, char const *filename)
     {
         fin >> vector[i];
     }
-    cout<<filename<<"向量导入完成"<<endl;
+    std::cout<<filename<<"向量导入完成"<<endl;
 }
 float LLRV(float *subconstell, int *pskdict, int gf)
 /*对输入的星座点计算对应的gf元素的对数似然比函数*/
