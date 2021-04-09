@@ -56,8 +56,8 @@ int main()
     }
     std::cout<<"constell.txt"<<"矩阵导入完成"<<endl;
     //验证一下H*c是不是得0
-    flag = gfmatrixmul(H,c,row1,col1);
-    delete []flag;
+    // flag = gfmatrixmul(H,c,row1,col1);
+    // delete []flag;
     float ** Lch = new float *[col1];
     int pskdict[8] = {-1,-1,-1,1,1,-1,1,1};
     for (int n = 0; n < col1; n++)
@@ -70,14 +70,6 @@ int main()
         }
         delete []subconstell; //一定要释放new出来的内存!!!
     }
-    // for (int i = 0; i < col1; i ++)
-    // {
-    //     cout<<"d_Lch第"<<i+1<<"行数据"<<endl;
-    //     for (int j = 0; j < 4; j++)
-    //     {
-    //         cout<<Lch[i][j]<<endl;
-    //     }
-    // }
     /*初始化Ln2m,Lm2n,Ln2mbuff*/
     float ** Ln2m = new float *[row2];
     float ** Lm2n = new float *[row1];
@@ -116,7 +108,7 @@ int main()
     /* 迭代开始 */
     int iterflag = 1;
     int iter_num = 0;
-    int maxiter = 50000;
+    int maxiter = 40;
 
     clock_t decodebegin = clock();
     while(iterflag == 1 && iter_num < maxiter)
@@ -150,28 +142,7 @@ int main()
             }
             est_c[n][0] = max_element(Lpost[n],Lpost[n]+4) - Lpost[n];  //根据最大后验估计技术est_c
         }
-        // 统计错误码元数
-        int errorcount = 0;
-        for (int k = 0; k < col1; k ++)
-        {
-            if ((est_c[k][0]-c[k][0]) != 0)
-            {
-                errorcount = errorcount + 1;
-            }
-        }
-        cout<<"迭代第"<<iter_num<<"次"<<"错误码元数："<<errorcount<<endl;
-        // 判断是否解码成功条件
-        flag = gfmatrixmul(H,est_c,row1,col1);
-        iterflag = 0;
-        for (int k = 0; k < row1; k ++)
-        {
-            if (flag[k][0] != 0)
-            {
-                iterflag = 1;
-                break;
-            }
-        }
-        delete []flag;
+
         //水平信息传递
         //初始化Ln2m
         for (int n = 0; n < col1; n ++)
@@ -265,13 +236,24 @@ int main()
             delete []Lro;
         }
     }
-    if (iter_num < maxiter)
-    {
-        cout<<"解码成功"<<endl;
-    }
+    
     clock_t decodeend = clock();
     double timeuse = ((double)(decodeend - decodebegin))/CLOCKS_PER_SEC;
     std::cout<<iter_num<<"轮解码耗时"<<timeuse<<"s"<<endl;
+    // 统计错误码元数
+    int errorcount = 0;
+    for (int k = 0; k < col1; k ++)
+    {
+        if ((est_c[k][0]-c[k][0]) != 0)
+        {
+            errorcount = errorcount + 1;
+        }
+    }
+    cout<<"错误码元数："<<errorcount<<endl;
+    if (errorcount == 0)
+    {
+        cout<<"解码成功"<<endl;
+    }
     return 0;
 }
 
