@@ -1,3 +1,6 @@
+#include "gfcalu.h"
+#include "auxil.h"
+#include "llrv.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -6,36 +9,13 @@
 #include <sys/time.h>
 
 using namespace std;
-int gfaddtable[4][4] = {{0,1,2,3},{1,0,3,2},{2,3,0,1},{3,2,1,0}};
-int gfsubtable[4][4] = {{0,1,2,3},{1,0,3,2},{2,3,0,1},{3,2,1,0}};
-int gfmultable[4][4] = {{0,0,0,0},{0,1,2,3},{0,2,3,1},{0,3,1,2}};
-int gfdivtable[4][4] = {{0,0,0,0},{0,1,3,2},{0,2,1,3},{0,3,2,1}};
-
-int gfadd(int a, int b);
-int gfsub(int a, int b);
-int gfmul(int a, int b);
-int gfdiv(int a, int b);
-int **gfmatrixmul(int **mat1, int **mat2, int row1, int col1);
-void readdata(int row,int col, int **matrix, char const *filename);
-float LLRV(float *subconstell, int *pskdict, int gf);
-float *floatslice(float *arry, int start_index, int end_index);
-int *intslice(int *arry, int start_index, int end_index);
-int findnode(int **arry, int node1, int node2,int len);
-void readvector(int row, int *vector, char const *filename);
-void Lpostupdate(float *Lpostv, float *Lm2nv, int target);
-int *nodediff(int *mset, int m, int n2m_num);
-void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target);
-float *LLRVresort(float *LLRV, int H, int q);
-void boxplusupdate(float *L, float *Lcmnk, int H, int q);
-float *iterboxplus(float *L, float *Lcnmk, int H, int q);
-float *boxplus(float *Ltheta, float *Lro, int H, int q);
 
 int main()
 {
     //参数设定
-    int row1 = 186;
-    int col1 = 372;
-    int row2 = 372;
+    int row1 = 1344;
+    int col1 = 2688;
+    int row2 = 2688;
     int col2 = 1;
     int maxweight1 = 3;
     int maxweight2 = 5;
@@ -62,21 +42,21 @@ int main()
         c[i] = new int[col2];
     }
     //读取文件
-    readdata(row1,col1,H,"H.txt");
-    readdata(row2,col2,c,"c.txt");
-    readdata(row1,maxweight2,m2n,"m2n.txt");
-    readdata(row2,maxweight1,n2m,"n2m.txt");
-    readvector(col1,n2m_num,"n2m_num.txt");
-    readvector(row1,m2n_num,"m2n_num.txt");
+    readdata(row1,col1,H,"data/H.txt");
+    readdata(row2,col2,c,"data/c.txt");
+    readdata(row1,maxweight2,m2n,"data/m2n.txt");
+    readdata(row2,maxweight1,n2m,"data/n2m.txt");
+    readvector(col1,n2m_num,"data/n2m_num.txt");
+    readvector(row1,m2n_num,"data/m2n_num.txt");
     ifstream fin;
-    fin.open("constell.txt");
+    fin.open("data/constell.txt");
     for (int i = 0; i < 2*row2; i++)
     {
         fin >> constell[i];
     }
     std::cout<<"constell.txt"<<"矩阵导入完成"<<endl;
     //验证一下H*c是不是得0
-    flag = gfmatrixmul(H,c,186,372);
+    flag = gfmatrixmul(H,c,row1,col1);
     delete []flag;
     float ** Lch = new float *[col1];
     int pskdict[8] = {-1,-1,-1,1,1,-1,1,1};
@@ -152,7 +132,7 @@ int main()
             }
         }
         //更新Lpost的值
-        for (int n = 0; n < 372; n ++)
+        for (int n = 0; n < col1; n ++)
         {
             //搜寻所有与当前n连接的节点的m节点
             int mset[n2m_num[n]] = {0};
@@ -181,9 +161,9 @@ int main()
         }
         cout<<"迭代第"<<iter_num<<"次"<<"错误码元数："<<errorcount<<endl;
         // 判断是否解码成功条件
-        flag = gfmatrixmul(H,est_c,186,372);
+        flag = gfmatrixmul(H,est_c,row1,col1);
         iterflag = 0;
-        for (int k = 0; k < 186; k ++)
+        for (int k = 0; k < row1; k ++)
         {
             if (flag[k][0] != 0)
             {
@@ -281,37 +261,9 @@ int main()
                     Lm2n[m][k*4 + j] = Lm2ntemp[j];
                 }
             }
-            // // 监视Ltheta Lro
-            // if (iter_num == 1 && m == 71)
-            // {
-            //     for (int k = 0; k < 5; k ++)
-            //     {
-            //         cout<<"第"<<k+1<<"行";
-            //         for (int i = 0; i < 4; i++)
-            //         {
-            //             cout<<Lro[k][i]<<" ";
-            //         }
-            //         cout<<""<<endl;
-            //     }
-            // }
             delete []Ltheta;
             delete []Lro;
         }
-        // if (iter_num == 1)
-        // {
-        //     for (int k = 0; k < row1; k ++)
-        //     {
-        //         cout<<"第"<<k+1<<"行";
-        //         for (int i = 0; i < 20; i++)
-        //         {
-        //             cout<<Lm2n[k][i]<<" ";
-        //         }
-        //         cout<<""<<endl;
-        //     }
-        // }
-        // gettimeofday(&t2,NULL);
-        // timeuse = (t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1000.0;
-        // cout<<"第"<<iter_num<<"解码耗时"<<timeuse<<"ms"<<endl;
     }
     if (iter_num < maxiter)
     {
@@ -323,232 +275,3 @@ int main()
     return 0;
 }
 
-int gfadd(int a, int b)
-{
-    return gfaddtable[a][b];
-}
-int gfsub(int a, int b)
-{
-    return gfsubtable[a][b];
-}
-int gfmul(int a, int b)
-{
-    return gfmultable[a][b];
-}
-int gfdiv(int a, int b)
-{
-    return gfdivtable[a][b];
-}
-int **gfmatrixmul(int **mat1, int **mat2, int row1, int col1)
-/*验证H*c的函数*/
-{
-    int **mat = new int *[row1];
-    for (int m = 0; m < row1; m++)
-    {
-        mat[m] = new int[1];
-        mat[m][0] = 0;
-        for (int n = 0;n < col1; n++)
-        {
-            mat[m][0] = gfadd(mat[m][0],gfmul(mat1[m][n],mat2[n][0]));
-        }
-    }
-    return mat;
-}
-void readdata(int row,int col, int **matrix, char const *filename)
-{
-    ifstream fin;
-    fin.open(filename);
-    for (int i = 0; i < row; i++)
-    {    
-        for (int j = 0; j < col; j++)
-        {
-            fin >> matrix[i][j];
-        }
-    }
-    std::cout<<filename<<"矩阵导入完成"<<endl;
-}
-void readvector(int row, int *vector, char const *filename)
-{
-    ifstream fin;
-    fin.open(filename);
-    for (int i = 0; i < row; i++)
-    {
-        fin >> vector[i];
-    }
-    std::cout<<filename<<"向量导入完成"<<endl;
-}
-float LLRV(float *subconstell, int *pskdict, int gf)
-/*对输入的星座点计算对应的gf元素的对数似然比函数*/
-{
-    float llrv = 0;
-    int index_start = gf*2;
-    int index_end = gf*2+1;
-    int x_index = 0;
-    for (int i = index_start; i <= index_end; i++)
-    {
-        if(pskdict[i]==1)
-        {
-            llrv = llrv + subconstell[x_index];
-        }
-        x_index = x_index + 1;
-    }
-    return llrv;
-}
-float *floatslice(float *arry, int start_index, int end_index)
-/*用于float类型的切片*/
-{
-    float *a = new float[end_index-start_index + 1];
-    int count = 0;
-    for (int i = start_index; i <= end_index;i++)
-    {
-        a[count] = arry[i];
-        count = count + 1;
-    }
-    return a;
-}
-int *intslice(int *arry, int start_index, int end_index)
-/*用于int类型的切片*/
-{
-    int *a = new int[end_index-start_index];
-    int count = 0;
-    for (int i = start_index; i <= end_index;i++)
-    {
-        a[count] = arry[i];
-        count = count + 1;
-    }
-    return a;
-}
-int findnode(int **arry, int node1, int node2,int len)
-{
-    int *temp;
-    temp = arry[node1];
-    for (int k = 0; k < len; k++)
-    {
-        if (temp[k] == node2)
-        {
-            return k;
-            break;
-        }
-    }
-}
-void Lpostupdate(float *Lpostv, float *Lm2nv, int target)
-{
-    for (int k = 0; k < 4; k ++)
-    {
-        Lpostv[k] = Lpostv[k] + Lm2nv[target*4 + k];
-    }
-}
-int *nodediff(int *mset, int m, int n2m_num)
-{
-    int *msubset = new int[n2m_num-1];
-    int msubset_index = 0;
-    for (int k = 0; k < n2m_num; k ++)
-    {
-        if (mset[k] != m)
-        {
-            msubset[msubset_index] = mset[k];
-            msubset_index = msubset_index + 1;
-        }
-    }
-    return msubset;
-}
-void LLRVupdate(float *LLRV1, float *LLRV2, int index, int target)
-{
-/*用于更新Ln2m*/
-    for (int k = 0; k < 4; k ++)
-    {
-        LLRV1[index*4 + k] = LLRV1[index*4 + k] + LLRV2[target*4 + k];
-    }
-}
-float *LLRVresort(float *LLRV, int H, int q)
-{
-    float *templlrv = new float[q];
-    templlrv[0] = LLRV[0]; //0除H永远得0
-    for (int k = 1; k < q; k ++)
-    {
-        int gf_index = gfdiv(k,H);
-        templlrv[k] = LLRV[gf_index]; 
-    }
-    return templlrv;
-}
-float *iterboxplus(float *L, float *Lcnmk, int H, int q)
-/*迭代计算Ltheta,Lro*/
-{
-    int gf0[q-1] = {0};
-    int set1_len;
-    int *set1;
-    float Lpart1 = 0.0;
-    float Lpart2 = 0.0;
-    float *LL = new float[q]; //新变量
-    for (int k = 0; k < q-1; k++)
-    {
-        gf0[k] = k + 1;
-        float L4 = L[k + 1] + Lcnmk[gfdiv(k + 1,H)];
-        Lpart2 = max(Lpart2,L4);
-    }
-    for (int i = 0; i < q; i ++)
-    {
-        float L1 = L[i];
-        float L2 = Lcnmk[gfdiv(i,H)];
-        Lpart1 = max(L1,L2);
-        if (i == 0)
-        {
-            set1 = gf0;
-            set1_len = q - 1;
-        }
-        else
-        {
-            set1 = nodediff(gf0, i, q-1); //set1用完删除
-            set1_len = q - 2;
-        }
-        for (int k = 0; k < set1_len; k ++)
-        {
-            int x = set1[k];
-            float L3 = L[x] + Lcnmk[gfdiv(gfadd(i,x),H)];
-            Lpart1 = max(Lpart1,L3);
-        }
-        LL[i] = Lpart1 - Lpart2;
-    }
-    delete []set1; //清除set1的内存
-    return LL;
-}
-float *boxplus(float *Ltheta, float *Lro, int H, int q)
-{
-    int gf0[q-1] = {0};
-    int set1_len;
-    int *set1;
-    float Lpart1 = 0.0;
-    float Lpart2 = 0.0;
-    float *LL = new float[q];
-    for (int k = 0; k < q-1; k ++)
-    {
-        gf0[k] = k + 1;
-        float L4 = Ltheta[k + 1] + Lro[k + 1];
-        Lpart2 = max(Lpart2, L4);
-    }
-    for (int i = 0; i <  q; i ++)
-    {
-        float L1 = Ltheta[gfdiv(i,H)];
-        float L2 = Lro[gfdiv(i,H)];
-        Lpart1 = max(L1,L2);
-        if (gfdiv(i,H) == 0)
-        {
-            set1 = gf0;
-            set1_len = q - 1;
-        }
-        else
-        {
-            set1 = nodediff(gf0, gfdiv(i,H), q-1);
-            set1_len = q - 2;
-        }
-        for (int k = 0; k < set1_len; k ++)
-        {
-            int x = set1[k];
-            float L3 = Ltheta[x] + Lro[gfadd(gfdiv(i,H),x)];
-            Lpart1 = max(Lpart1,L3);
-        }
-        LL[i] = Lpart1 - Lpart2;
-    }
-    delete []set1;
-    return LL;
-}
