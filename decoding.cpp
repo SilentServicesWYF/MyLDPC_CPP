@@ -13,9 +13,9 @@ using namespace std;
 int main()
 {
     //参数设定
-    int row1 = 1344;
-    int col1 = 2688;
-    int row2 = 2688;
+    int row1 = 672;
+    int col1 = 1344;
+    int row2 = 1344;
     int col2 = 1;
     int maxweight1 = 3;
     int maxweight2 = 5;
