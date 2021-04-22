@@ -1,0 +1,12 @@
+// // 判断是否解码成功条件
+// flag = gfmatrixmul(H,est_c,row1,col1);
+// iterflag = 0;
+// for (int k = 0; k < row1; k ++)
+// {
+//     if (flag[k][0] != 0)
+//     {
+//         iterflag = 1;
+//         break;
+//     }
+// }
+// delete []flag;
